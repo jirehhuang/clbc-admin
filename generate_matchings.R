@@ -6,32 +6,34 @@
 
 generate_matchings <- function(n) {
   
-  # Create a vector of labels
+  ## create a vector of labels
   labels <- c("∞", 0:(n-2))
+  labels <- c(n, seq_len(n-1)) - 1
   
-  # Initialize an empty list to store matchings
+  ## initialize an empty list to store matchings
   matchings <- vector("list", n-1)
   
-  # Check if n is odd
+  ## check if n is odd
   if (n %% 2 != 0) {
-    # Generate the first grouping for odd number of students
+    
+    ## generate the first grouping for odd number of students
     first_grouping <- list(
-      c("∞", 0),
+      c(n-1, 0),
       c(1, (n-2)),
       c(2, (n-3)),
       c(3, 4, 5)
     )
     
-    # Store the first grouping
+    ## store the first grouping
     matchings[[1]] <- first_grouping
     
-    # Generate subsequent groupings by rotating the labels
+    ## generate subsequent groupings by rotating the labels
     for (i in 1:(n-2)) {
       previous_grouping <- matchings[[i]]
       new_grouping <- lapply(previous_grouping, function(pair) {
         sapply(pair, function(label) {
-          if (label == "∞") {
-            return("∞")
+          if (label == (n-1)) {
+            return(n-1)
           } else {
             return((as.numeric(label) + 1) %% (n-1))
           }
@@ -40,10 +42,11 @@ generate_matchings <- function(n) {
       matchings[[i + 1]] <- new_grouping
     }
   } else {
-    # Generate matchings for even number of students
+    
+    ## generate matchings for even number of students
     for (i in 0:(n-2)) {
       matching <- list()
-      matching[[1]] <- c("∞", i)
+      matching[[1]] <- c(n-1, i)
       for (k in 1:((n-2) / 2)) {
         student1 <- (i + k) %% (n-1)
         student2 <- (i - k) %% (n-1)
@@ -53,11 +56,18 @@ generate_matchings <- function(n) {
       matchings[[i + 1]] <- matching
     }
   }
-  
+  ## convert to base 1 index
+  matchings <- lapply(matchings, function(x){
+    
+    lapply(x, function(y) y + 1)
+  })
   return(matchings)
 }
 
+
+
 # Function to print matchings
+
 print_matchings <- function(matchings) {
   for (i in 1:length(matchings)) {
     cat("i =", i-1, ":")
@@ -68,7 +78,15 @@ print_matchings <- function(matchings) {
   }
 }
 
-# Example usage
+
+
+## example usage
 n <- 9
 matchings <- generate_matchings(n)
 print_matchings(matchings)
+
+## check correctness
+print(all(sapply(matchings, function(x){
+  
+  setequal(ux <- unlist(x), seq_len(max(ux)))
+})))

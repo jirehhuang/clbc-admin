@@ -6,8 +6,12 @@
 
 generate_matchings <- function(n) {
   
+  ## require n >= 4
+  if (n < 4){
+    
+    stop("Trivial for n < 4.")
+  }
   ## create a vector of labels
-  labels <- c("∞", 0:(n-2))
   labels <- c(n, seq_len(n-1)) - 1
   
   ## initialize an empty list to store matchings
@@ -18,11 +22,21 @@ generate_matchings <- function(n) {
     
     ## generate the first grouping for odd number of students
     first_grouping <- list(
-      c(n-1, 0),
-      c(1, (n-2)),
-      c(2, (n-3)),
-      c(3, 4, 5)
+      c(n-1, 0)
     )
+    for (i in seq_len(n-1)){
+      
+      remainder <- setdiff(seq(0, n-1), unlist(first_grouping))
+      
+      if (length(remainder) == 3) break
+      
+      first_grouping <- c(first_grouping, list(
+        c(i, n-i-1)
+      ))
+    }
+    first_grouping <- c(first_grouping, list(
+      remainder
+    ))
     
     ## store the first grouping
     matchings[[1]] <- first_grouping
@@ -80,13 +94,50 @@ print_matchings <- function(matchings) {
 
 
 
-## example usage
-n <- 9
-matchings <- generate_matchings(n)
-print_matchings(matchings)
+## create vector of names of people
+people <- sprintf("Name%s", seq_len(19))
 
-## check correctness
-print(all(sapply(matchings, function(x){
+## convert to matchings by getting index groups and converting to names
+matchings <- lapply(generate_matchings(length(people)), function(x){
   
-  setequal(ux <- unlist(x), seq_len(max(ux)))
-})))
+  lapply(x, function(y){
+    
+    people[y]
+  })
+})
+# print_matchings(matchings)
+
+## get number of columns (2 if even, 3 if odd)
+ncols <- max(sapply(matchings, function(x) sapply(x, length)))
+
+## convert matchings to table format
+match_table <- do.call(rbind, lapply(seq_len(length(matchings)), function(x){
+  
+  ## create one row for each group, with blank value if necessary to match dimensions
+  dfx <- do.call(rbind, lapply(matchings[[x]], function(y){
+    
+    ## add blank values to get length ncols
+    if (length(y) < ncols){
+      
+      return(c(y, rep("", ncols - length(y))))
+      
+    } else{
+      
+      return(y)
+    }
+  }))
+  ## add header on top: blank column, and a row with title "Matchings #"
+  dfx <- rbind(matrix(c(rep("", ncols),
+                        sprintf("Matchings %s", x), rep("", ncols - 1)), 
+                      ncol = ncols, byrow = TRUE),
+               dfx)
+  
+  return(dfx)
+}))
+
+## add people to the top section of match_table, with blank buffer
+match_table <- rbind(cbind(matrix(c("People", people), ncol = 1),
+                           matrix(rep("", (ncols - 1) * (length(people) + 1)), ncol = ncols - 1)),
+                     match_table)
+
+print(match_table)
